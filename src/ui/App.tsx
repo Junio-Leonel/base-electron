@@ -1,8 +1,9 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function App() {
   const [name, setName] = useState("");
-  const [submittedName, setSubmittedName] = useState("");
+  const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
+  const [loading, setLoading] = useState(false);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -11,10 +12,20 @@ export default function App() {
       return;
     }
 
-    setSubmittedName(name);
-
+    window.electron.insertUser(name);
     setName("");
+
+    window.electron.getUsers().then(setUsers).catch(console.error);
   }
+
+  useEffect(() => {
+    setLoading(true);
+    window.electron
+      .getUsers()
+      .then(setUsers)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="w-full h-full bg-neutral-900 flex flex-col items-center justify-center">
@@ -32,14 +43,20 @@ export default function App() {
 
         <button
           type="submit"
-          className="bg-green-500 rounded-lg h-10 text-white font-medium max-w-20"
+          className="bg-green-500 rounded-lg h-10 text-white font-medium w-full"
         >
           Send
         </button>
       </form>
 
-      {submittedName && (
-        <strong className="text-white mt-4">{submittedName}</strong>
+      {loading ? (
+        <p className="text-white mt-4">Loading...</p>
+      ) : (
+        <ul className="text-white mt-4">
+          {users.map((user) => (
+            <li key={user.id}>{user.name}</li>
+          ))}
+        </ul>
       )}
     </div>
   );
